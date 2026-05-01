@@ -19,7 +19,7 @@ def create_music_table():
             ],
  
             # Declaring attributes used
-            AttributeDeclarations=[
+            AttributeDefinitions=[
                 {"AttributeName": "artist",      "AttributeType": "S"},
                 {"AttributeName": "title_album", "AttributeType": "S"},
                 {"AttributeName": "year",        "AttributeType": "S"},
