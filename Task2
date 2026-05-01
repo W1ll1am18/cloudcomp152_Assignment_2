@@ -23,7 +23,6 @@ def create_music_table():
                 {"AttributeName": "artist",      "AttributeType": "S"},
                 {"AttributeName": "title_album", "AttributeType": "S"},
                 {"AttributeName": "year",        "AttributeType": "S"},
-                {"AttributeName": "album",       "AttributeType": "S"},
                 {"AttributeName": "title",       "AttributeType": "S"},
             ],
  
