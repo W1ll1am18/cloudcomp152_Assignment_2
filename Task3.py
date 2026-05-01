@@ -81,4 +81,5 @@ if __name__ == "__main__":
     load_songs(JSON_FILE)
  
     with open(JSON_FILE, "r", encoding="utf-8") as f:
+     verify_load(expected)
         expected = len(json.load(f)["songs"])
