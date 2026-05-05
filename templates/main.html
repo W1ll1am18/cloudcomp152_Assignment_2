@@ -8,15 +8,43 @@
   <div class="container">
     <h2>Main Page</h2>
 
-    <h3 id="welcome"></h3>
+    <div class="user_area">
+      <h3 id="welcome"></h3>
+      <button onclick="logout()">Logout</button>
+    </div>
 
-    <button onclick="logout()">Logout</button>
+    <hr>
+
+    <div class="query_area">
+      <h3>Search Music</h3>
+
+      <form onsubmit="queryMusic(event)">
+        <input id="title" type="text" placeholder="Title">
+        <input id="artist" type="text" placeholder="Artist">
+        <input id="year" type="text" placeholder="Year">
+        <input id="album" type="text" placeholder="Album">
+
+        <button type="submit">Query</button>
+      </form>
+
+      <p id="query-message" style="color:red;"></p>
+    </div>
+
+    <hr>
+
+    <div class="results_area">
+      <h3>Results</h3>
+      <div id="results"></div>
+    </div>
   </div>
 
   <script>
-    const userName = localStorage.getItem("user_name");
+    const API_BASE_URL = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev";
 
-    if (!userName) {
+    const userName = localStorage.getItem("user_name");
+    const email = localStorage.getItem("email");
+
+    if (!userName || !email) {
       window.location.href = "/login";
     }
 
@@ -25,6 +53,65 @@
     function logout() {
       localStorage.clear();
       window.location.href = "/login";
+    }
+
+    async function queryMusic(event) {
+      event.preventDefault();
+
+      const title = document.getElementById("title").value.trim();
+      const artist = document.getElementById("artist").value.trim();
+      const year = document.getElementById("year").value.trim();
+      const album = document.getElementById("album").value.trim();
+
+      const params = new URLSearchParams();
+
+      if (title) params.append("title", title);
+      if (artist) params.append("artist", artist);
+      if (year) params.append("year", year);
+      if (album) params.append("album", album);
+
+      if (params.toString() === "") {
+        document.getElementById("query-message").innerText = "At least one field must be completed.";
+        document.getElementById("results").innerHTML = "";
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/music?${params.toString()}`);
+      const data = await response.json();
+
+      const resultsDiv = document.getElementById("results");
+      const message = document.getElementById("query-message");
+
+      resultsDiv.innerHTML = "";
+      message.innerText = "";
+
+      if (!response.ok) {
+        message.innerText = data.message || "No result is retrieved. Please query again";
+        return;
+      }
+
+      data.forEach(song => {
+        const card = document.createElement("div");
+        card.style.border = "1px solid #ccc";
+        card.style.padding = "10px";
+        card.style.margin = "10px 0";
+
+        card.innerHTML = `
+            <h4>${song.title}</h4>
+            <p><strong>Artist:</strong> ${song.artist}</p>
+            <p><strong>Album:</strong> ${song.album}</p>
+            <p><strong>Year:</strong> ${song.year}</p>
+            <img src="${song.image_url}" alt="${song.artist}" width="120">
+            <br><br>
+            <button onclick='subscribeSong(${JSON.stringify(song)})'>Subscribe</button>
+          `;
+
+        resultsDiv.appendChild(card);
+      });
+    }
+
+    function subscribeSong(song) {
+      alert("Subscribe feature will be added next for: " + song.title);
     }
   </script>
 </body>
