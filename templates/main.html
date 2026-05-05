@@ -1,10 +1,32 @@
 <html>
-  <head>
-    <link rel="stylesheet" href="{{ url_for('static',filename='css/styles.css') }}"/>
-  </head>
-  <body>
-    <div class="container">
-      <h2>Main Page</h4>
-    </div>
-  </body>
+
+<head>
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/styles.css') }}" />
+</head>
+
+<body>
+  <div class="container">
+    <h2>Main Page</h2>
+
+    <h3 id="welcome"></h3>
+
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    const userName = localStorage.getItem("user_name");
+
+    if (!userName) {
+      window.location.href = "/login";
+    }
+
+    document.getElementById("welcome").innerText = "Welcome, " + userName;
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "/login";
+    }
+  </script>
+</body>
+
 </html>

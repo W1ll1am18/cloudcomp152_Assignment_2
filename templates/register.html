@@ -1,31 +1,73 @@
 <html>
-  <head>
-    <link rel="stylesheet" href="{{ url_for('static',filename='css/styles.css') }}"/>
-  </head>
-  <body>
-    <div class="container">
-      <div class="register_container">
-        <h2>Register</h2>
-        <!--
-        TODO
-        button trigger onsubmit JS validation function
-        error message
-        redirection to login on success
-        CSS
-        -->
-        <form class="register_form" onsubmit="">
-          <h3>Enter your email<h3>
-          <input type="text" placeholder="Email"></input>
 
-          <h3>Enter your username<h3>
-          <input type="text" placeholder="Username"></input>
+<head>
+  <link rel="stylesheet" href="{{ url_for('static',filename='css/styles.css') }}" />
+</head>
 
-          <h3>Enter your password<h3>
-          <input type="text" placeholder="Password"></input>
-            
-          <button href="">Register</button>
-        </form>
-      </div>
+<body>
+  <div class="container">
+    <div class="register_container">
+      <h2>Register</h2>
+
+      <form class="register_form" onsubmit="registerUser(event)">
+        <h3>Enter your email</h3>
+        <input id="email" type="text" placeholder="Email" required>
+
+        <h3>Enter your username</h3>
+        <input id="user_name" type="text" placeholder="Username" required>
+
+        <h3>Enter your password</h3>
+        <input id="password" type="password" placeholder="Password" required>
+
+        <button type="submit">Register</button>
+      </form>
+
+      <p id="error-message" style="color:red;"></p>
+      <p id="success-message" style="color:green;"></p>
+
+      <p>Already have an account?</p>
+      <a href="http://localhost:5000/login" class="button">Login</a>
     </div>
-  </body>
+  </div>
+
+  <script>
+    async function registerUser(event) {
+      event.preventDefault();
+
+      const apiUrl = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev/register";
+
+      const email = document.getElementById("email").value;
+      const user_name = document.getElementById("user_name").value;
+      const password = document.getElementById("password").value;
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: email,
+          user_name: user_name,
+          password: password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        document.getElementById("error-message").innerText = data.message;
+        document.getElementById("success-message").innerText = "";
+        return;
+      }
+
+      document.getElementById("success-message").innerText = "Registration successful. Redirecting to login...";
+      document.getElementById("error-message").innerText = "";
+
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
+    }
+  </script>
+</body>
+
 </html>
