@@ -26,7 +26,7 @@
       <p id="success-message" style="color:green;"></p>
 
       <p>Already have an account?</p>
-      <a href="http://localhost:5000/login" class="button">Login</a>
+      <a href="/login" class="button">Login</a>
     </div>
   </div>
 
@@ -34,7 +34,8 @@
     async function registerUser(event) {
       event.preventDefault();
 
-      const apiUrl = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev/register";
+      //const apiUrl = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev/register";
+      const apiUrl = "/register";
 
       const email = document.getElementById("email").value;
       const user_name = document.getElementById("user_name").value;
@@ -60,7 +61,7 @@
         return;
       }
 
-      document.getElementById("success-message").innerText = "Registration successful. Redirecting to login...";
+      document.getElementById("success-message").innerText = data.message;
       document.getElementById("error-message").innerText = "";
 
       setTimeout(() => {

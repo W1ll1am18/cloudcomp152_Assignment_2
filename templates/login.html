@@ -22,7 +22,7 @@
       <p id="error-message" style="color:red;"></p>
 
       <p>Not a user?</p>
-      <a href="http://localhost:5000/register" class="button">Register</a>
+      <a href="/register" class="button">Register</a>
     </div>
   </div>
 
@@ -30,7 +30,8 @@
     async function loginUser(event) {
       event.preventDefault();
 
-      const apiUrl = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev/login";
+      //const apiUrl = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev/login";
+      const apiUrl = "/login";
 
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
