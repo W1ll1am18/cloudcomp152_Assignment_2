@@ -83,60 +83,99 @@ def query_music():
     if not any([title, artist, year, album]):
         return jsonify({"message": "At least one query field is required"}), 400
 
-    filter_parts = []
-    expr_values  = {}
-    expr_names   = {}
+    if title and album:
+        result = music_table.get_item(Key={"title": title, "album": album})
+        item   = result.get("Item")
 
+        if not item:
+            return jsonify({"message": "No result is retrieved. Please query again", "songs": []}), 200
+        if artist and item.get("artist") != artist:
+            return jsonify({"message": "No result is retrieved. Please query again", "songs": []}), 200
+        if year and item.get("year") != year:
+            return jsonify({"message": "No result is retrieved. Please query again", "songs": []}), 200
+            
+
+        return jsonify({"songs": [item]}), 200
     if title:
-        filter_parts.append("#t = :title")
-        expr_names["#t"]      = "title"
-        expr_values[":title"] = title
+        kwargs = {
+            "KeyConditionExpression": Key("title").eq(title),
+        }
+        filter_expr, expr_names, expr_values = _build_filter(artist=artist, year=year, album=album)
+        if filter_expr:
+            kwargs["FilterExpression"]        = filter_expr
+            kwargs["ExpressionAttributeNames"]  = expr_names
+            kwargs["ExpressionAttributeValues"] = expr_values
 
-    if artist:
-        filter_parts.append("#a = :artist")
-        expr_names["#a"]       = "artist"
-        expr_values[":artist"] = artist
+        response = music_table.query(**kwargs)
+        items    = response.get("Items", [])
 
-    if year:
-        filter_parts.append("#y = :year")
-        expr_names["#y"]     = "year"
-        expr_values[":year"] = year
-
-    if album:
-        filter_parts.append("#al = :album")
-        expr_names["#al"]     = "album"
-        expr_values[":album"] = album
-
-    filter_expression = " AND ".join(filter_parts)
+        if not items:
+            return jsonify({"message": "No result is retrieved. Please query again", "songs": []}), 200
+        return jsonify({"songs": items}), 200
 
     if artist:
         kwargs = {
-            "IndexName":                 "artist-title-gsi",
-            "KeyConditionExpression":    Key("artist").eq(artist),
-            "ExpressionAttributeNames":  {k: v for k, v in expr_names.items()},
-            "ExpressionAttributeValues": {k: v for k, v in expr_values.items()},
+            "IndexName":              "artist-title-gsi",
+            "KeyConditionExpression": Key("artist").eq(artist),
         }
-        remaining = [p for p in filter_parts if "#a" not in p]
-        if remaining:
-            kwargs["FilterExpression"] = " AND ".join(remaining)
+
+        
+        filter_expr, expr_names, expr_values = _build_filter(year=year, album=album)
+        if filter_expr:
+            kwargs["FilterExpression"]          = filter_expr
+            kwargs["ExpressionAttributeNames"]  = expr_names
+            kwargs["ExpressionAttributeValues"] = expr_values
 
         response = music_table.query(**kwargs)
+        items    = response.get("Items", [])
 
-    else:
-        response = music_table.scan(
-            FilterExpression=filter_expression,
-            ExpressionAttributeNames= {k: v for k, v in expr_names.items()},
-            ExpressionAttributeValues={k: v for k, v in expr_values.items()},
-        )
+        if not items:
+            return jsonify({"message": "No result is retrieved. Please query again", "songs": []}), 200
+        return jsonify({"songs": items}), 200
 
+    # album/year only
+    filter_expr, expr_names, expr_values = _build_filter(year=year, album=album)
+    response = music_table.scan(
+        FilterExpression=filter_expr,
+        ExpressionAttributeNames=expr_names,
+        ExpressionAttributeValues=expr_values,
+    )
     items = response.get("Items", [])
 
     if not items:
         return jsonify({"message": "No result is retrieved. Please query again", "songs": []}), 200
-
     return jsonify({"songs": items}), 200
 
-# subscriptionss
+
+def _build_filter(title=None, artist=None, year=None, album=None):
+    """Helper: build a FilterExpression string + name/value dicts."""
+    parts       = []
+    expr_names  = {}
+    expr_values = {}
+
+    if title:
+        parts.append("#t = :title")
+        expr_names["#t"]      = "title"
+        expr_values[":title"] = title
+
+    if artist:
+        parts.append("#a = :artist")
+        expr_names["#a"]       = "artist"
+        expr_values[":artist"] = artist
+
+    if year:
+        parts.append("#y = :year")
+        expr_names["#y"]     = "year"
+        expr_values[":year"] = year
+
+    if album:
+        parts.append("#al = :album")
+        expr_names["#al"]     = "album"
+        expr_values[":album"] = album
+
+    return " AND ".join(parts), expr_names, expr_values
+
+# subscriptions
 @app.route("/subscriptions", methods=["GET"])
 def get_subscriptions():
     email = request.args.get("email")
