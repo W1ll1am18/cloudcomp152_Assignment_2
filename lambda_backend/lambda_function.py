@@ -104,7 +104,40 @@ def register(event):
 
 
 def query_music(event):
-    return make_response(200, {"message": "music query endpoint working"})
+    params = event.get("queryStringParameters") or {}
+
+    title = params.get("title")
+    artist = params.get("artist")
+    album = params.get("album")
+    year = params.get("year")
+
+    filter_expression = None
+
+    if title:
+        filter_expression = Attr("title").contains(title)
+
+    if artist:
+        expr = Attr("artist").contains(artist)
+        filter_expression = expr if filter_expression is None else filter_expression & expr
+
+    if album:
+        expr = Attr("album").contains(album)
+        filter_expression = expr if filter_expression is None else filter_expression & expr
+
+    if year:
+        expr = Attr("year").eq(year)
+        filter_expression = expr if filter_expression is None else filter_expression & expr
+
+    if filter_expression is None:
+        return make_response(400, {"message": "At least one query field is required"})
+
+    result = music_table.scan(FilterExpression=filter_expression)
+    songs = result.get("Items", [])
+
+    if not songs:
+        return make_response(404, {"message": "No result is retrieved. Please query again"})
+
+    return make_response(200, songs)
 
 
 def get_subscriptions(event):
