@@ -10,6 +10,10 @@
     <div class="user-area">
       <h2>Main Page</h2>
       <h3 id="welcome"></h3>
+      <div class="subscriptions-area">
+        <h3>My Subscriptions</h3>
+        <div id="subscriptions-container"></div>
+      <div>
       <button onclick="logout()">Logout</button>
     </div>
 
@@ -45,7 +49,7 @@
   </div>
 
   <script>
-      const API_BASE_URL = "";
+      const API_BASE_URL = ""; //Leave empty for local flask
       // const API_BASE_URL = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev";
 
       const userName = localStorage.getItem("user_name");
@@ -56,6 +60,7 @@
       }
 
       document.getElementById("welcome").innerText = "Welcome, " + userName;
+      getSubscriptions()
 
       async function query(event) {
         event.preventDefault();
@@ -138,8 +143,135 @@
         }
       }
 
-      function subscribe(song) {
-        alert("Subscribe coming soon: " + song.title);
+      async function subscribe(song) {
+        const artist = song.artist;
+        const title  = song.title;
+        const album  = song.album;
+        const year   = song.year;
+        const image_url = song.image_url;  
+
+        try {
+          let url;
+          if (API_BASE_URL === "") {
+            url = `/subscribe`;
+          } else {
+            //Lambda implementation??
+            //url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
+          }
+
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email: email,
+              artist: artist,
+              title: title,
+              album: album,
+              year: year,
+              image_url: image_url
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            document.getElementById("error-message").innerText = data.message;
+            return;
+          }
+
+          getSubscriptions()
+        } catch (error) {
+          document.getElementById("error-message").innerText = "Error connecting to server";
+        }
+      }
+
+      async function removeSubscription(title, album) {
+        try {
+          let url;
+          if (API_BASE_URL === "") {
+            url = `/unsubscribe`;
+          } else {
+            //Lambda implementation??
+            //url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
+          }
+
+          const response = await fetch(url, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              email: email,
+              title: title,
+              album: album,
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            document.getElementById("error-message").innerText = data.message;
+            return;
+          }
+
+          getSubscriptions()
+        } catch (error) {
+          document.getElementById("error-message").innerText = "Error connecting to server";
+        }
+      }
+
+      async function getSubscriptions() {
+        const params = new URLSearchParams();
+        if (email) params.append("email", email);
+      
+        try {
+          let url;
+          if (API_BASE_URL === "") {
+            url = `/subscriptions?${params.toString()}`;
+          } else {
+            //const lambdaParams = new URLSearchParams();
+            //if (email) lambdaParams.append("email", email);
+            //url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
+          }
+
+          const response = await fetch(url, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+          
+          const data = await response.json();
+          const container = document.getElementById("subscriptions-container");
+          container.innerHTML = "";
+
+          if (!response.ok || !data.Subscriptions || data.Subscriptions.length === 0) {
+            container.innerHTML = "<p>No subscriptions added</p>";
+            return;
+          }
+
+          // display each subscription
+          data.Subscriptions.forEach(sub => {
+            const subDiv = document.createElement("div");
+            subDiv.className = "subscription-item";
+
+            subDiv.innerHTML = `
+                <p><strong>Title:</strong>  ${sub.title}</p>
+                <p><strong>Artist:</strong> ${sub.artist}</p>
+                <p><strong>Year:</strong>   ${sub.year}</p>
+                <p><strong>Album:</strong>  ${sub.album}</p>
+                <img src="${sub.image_url}" alt="${sub.artist}" width="80">
+                <button onclick="removeSubscription('${sub.title}', '${sub.album}')">Remove</button>
+                <hr>
+            `;
+            container.appendChild(subDiv);
+
+          });
+        } catch (error) {
+          document.getElementById("error-message").innerText = "Error connecting to server";
+        }
       }
 
       function logout() {
