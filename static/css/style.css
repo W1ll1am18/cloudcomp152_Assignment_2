@@ -2,3 +2,19 @@ body {
    background-color: black;
    color: white;
 }
+
+.query_form {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.query_form div {
+  display: flex;
+  flex-direction: column;
+}
+
+.query_form input {
+  padding: 5px;
+  width: 120px;
+}
