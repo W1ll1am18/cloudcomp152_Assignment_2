@@ -7,8 +7,8 @@ from urllib.parse import urlparse
 s3 = boto3.client("s3", region_name="us-east-1")
 dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
 
-BUCKET_NAME = "music-images-will-2026-a2"
-#BUCKET_NAME = "music-images-joshua-2026-a2"
+# BUCKET_NAME = "music-images-will-2026-a2"
+BUCKET_NAME = "music-images-joshua-2026-a2"
 table = dynamodb.Table("music")
 
 with open("2026a2_songs.json", "r", encoding="utf-8") as file:

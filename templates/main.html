@@ -14,272 +14,221 @@
         <h3>My Subscriptions</h3>
         <hr>
         <div id="subscriptions-container"></div>
-      <div>
-      <button onclick="logout()">Logout</button>
-    </div>
-    <hr>
-    <h3>Search</h3>
-    <form class="query_form" onsubmit="query(event)">
-      <div>
-        <label>Artist</label>
-        <input id="artist" type="text" placeholder="Artist">
+        <div>
+          <button onclick="logout()">Logout</button>
+        </div>
+        <hr>
+        <h3>Search</h3>
+        <form class="query_form" onsubmit="query(event)">
+          <div>
+            <label>Artist</label>
+            <input id="artist" type="text" placeholder="Artist">
+          </div>
+
+          <div>
+            <label>Song</label>
+            <input id="song-title" type="text" placeholder="Song">
+          </div>
+
+          <div>
+            <label>Album</label>
+            <input id="album" type="text" placeholder="Album">
+          </div>
+
+          <div>
+            <label>Year</label>
+            <input id="year" type="text" placeholder="Year">
+          </div>
+
+          <button type="submit">Search</button>
+        </form>
+        <hr>
+        <p id="error-message" style="color:red;"></p>
+
+        <div id="results-container"></div>
+
       </div>
 
-      <div>
-        <label>Song</label>
-        <input id="song-title" type="text" placeholder="Song">
-      </div>
+      <script>
+        // const API_BASE_URL = ""; //Leave empty for local flask
+        const API_BASE_URL = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev";
 
-      <div>
-        <label>Album</label>
-        <input id="album" type="text" placeholder="Album">
-      </div>
+        const userName = localStorage.getItem("user_name");
+        const email = localStorage.getItem("email");
 
-      <div>
-        <label>Year</label>
-        <input id="year" type="text" placeholder="Year">
-      </div>
-
-      <button type="submit">Search</button>
-    </form>
-    <hr>
-    <p id="error-message" style="color:red;"></p>
-
-    <div id="results-container"></div>
-
-  </div>
-
-  <script>
-      const API_BASE_URL = ""; //Leave empty for local flask
-      // const API_BASE_URL = "https://21wkhil4ig.execute-api.us-east-1.amazonaws.com/dev";
-
-      const userName = localStorage.getItem("user_name");
-      const email    = localStorage.getItem("email");
-
-      if (!userName || !email) {
-        window.location.href = "/login";
-      }
-
-      document.getElementById("welcome").innerText = "Welcome, " + userName;
-      getSubscriptions()
-
-      async function query(event) {
-        event.preventDefault();
-
-        const artist = document.getElementById("artist").value.trim();
-        const song   = document.getElementById("song-title").value.trim();
-        const album  = document.getElementById("album").value.trim();
-        const year   = document.getElementById("year").value.trim();
-
-        const container = document.getElementById("results-container");
-        container.innerHTML = "";
-        document.getElementById("error-message").innerText = "";
-
-        //CARE FLASK uses song
-        const params = new URLSearchParams();
-        if (artist) params.append("artist", artist);
-        if (song)   params.append("song", song);
-        if (album)  params.append("album", album);
-        if (year)   params.append("year", year);
-
-        if (params.toString() === "") {
-          document.getElementById("error-message").innerText = "At least one field must be completed.";
-          return;
+        if (!userName || !email) {
+          window.location.href = "/login";
         }
 
-        try {
-          let url;
+        document.getElementById("welcome").innerText = "Welcome, " + userName;
+        getSubscriptions()
 
-          if (API_BASE_URL === "") {
-            url = `/query?${params.toString()}`;
-          } else {
-            //CARE - Lambda expects title 
-            const lambdaParams = new URLSearchParams();
-            if (artist) lambdaParams.append("artist", artist);
-            if (song)   lambdaParams.append("title", song);
-            if (album)  lambdaParams.append("album", album);
-            if (year)   lambdaParams.append("year", year);
-            url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
-          }
+        async function query(event) {
+          event.preventDefault();
 
-          const response = await fetch(url, {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-          });
+          const artist = document.getElementById("artist").value.trim();
+          const title = document.getElementById("song-title").value.trim();
+          const album = document.getElementById("album").value.trim();
+          const year = document.getElementById("year").value.trim();
 
-          const data = await response.json();
+          const container = document.getElementById("results-container");
+          const error = document.getElementById("error-message");
 
-          if (!response.ok) {
-            document.getElementById("error-message").innerText = data.message || "No result is retrieved. Please query again";
+          container.innerHTML = "";
+          error.innerText = "";
+
+          const params = new URLSearchParams();
+          if (artist) params.append("artist", artist);
+          if (title) params.append("title", title);
+          if (album) params.append("album", album);
+          if (year) params.append("year", year);
+
+          if (params.toString() === "") {
+            error.innerText = "At least one field must be completed.";
             return;
           }
 
-          const songs = data.songs || [];
+          try {
+            const response = await fetch(`${API_BASE_URL}/music?${params.toString()}`);
+            const data = await response.json();
 
-          if (songs.length === 0) {
-            document.getElementById("error-message").innerText = "No result is retrieved. Please query again";
-            return;
-          }
+            if (!response.ok) {
+              error.innerText = data.message || "No result is retrieved. Please query again";
+              return;
+            }
 
-          songs.forEach(song => {
-            const songDiv = document.createElement("div");
-            songDiv.className = "song-item";
+            const songs = Array.isArray(data) ? data : data.songs || [];
 
-            songDiv.innerHTML = `
-              <p><strong>Title:</strong>  ${song.title}</p>
+            if (songs.length === 0) {
+              error.innerText = "No result is retrieved. Please query again";
+              return;
+            }
+
+            songs.forEach(song => {
+              const songDiv = document.createElement("div");
+              songDiv.className = "song-item";
+
+              songDiv.innerHTML = `
+              <p><strong>Title:</strong> ${song.title}</p>
               <p><strong>Artist:</strong> ${song.artist}</p>
-              <p><strong>Year:</strong>   ${song.year}</p>
-              <p><strong>Album:</strong>  ${song.album}</p>
+              <p><strong>Year:</strong> ${song.year}</p>
+              <p><strong>Album:</strong> ${song.album}</p>
               <img src="${song.image_url}" alt="${song.artist}" width="80">
               <button onclick='subscribe(${JSON.stringify(song)})'>Subscribe</button>
               <hr>
             `;
 
-            container.appendChild(songDiv);
-          });
+              container.appendChild(songDiv);
+            });
 
-        } catch (error) {
-          document.getElementById("error-message").innerText = "Error connecting to server";
-          console.error(error);
+          } catch (error) {
+            document.getElementById("error-message").innerText = "Error connecting to server";
+            console.error(error);
+          }
         }
-      }
 
-      async function subscribe(song) {
-        const artist = song.artist;
-        const title  = song.title;
-        const album  = song.album;
-        const year   = song.year;
-        const image_url = song.image_url;  
+        async function subscribe(song) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/subscribe`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                email: email,
+                artist: song.artist,
+                title: song.title,
+                album: song.album,
+                year: song.year,
+                image_url: song.image_url
+              })
+            });
 
-        try {
-          let url;
-          if (API_BASE_URL === "") {
-            url = `/subscribe`;
-          } else {
-            //Lambda implementation??
-            //url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
-          }
+            const data = await response.json();
 
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              email: email,
-              artist: artist,
-              title: title,
-              album: album,
-              year: year,
-              image_url: image_url
-            })
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            document.getElementById("error-message").innerText = data.message;
-            return;
-          }
-
-          getSubscriptions()
-        } catch (error) {
-          document.getElementById("error-message").innerText = "Error connecting to server";
-        }
-      }
-
-      async function removeSubscription(title, album) {
-        try {
-          let url;
-          if (API_BASE_URL === "") {
-            url = `/unsubscribe`;
-          } else {
-            //Lambda implementation??
-            //url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
-          }
-
-          const response = await fetch(url, {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              email: email,
-              title: title,
-              album: album,
-            })
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            document.getElementById("error-message").innerText = data.message;
-            return;
-          }
-
-          getSubscriptions()
-        } catch (error) {
-          document.getElementById("error-message").innerText = "Error connecting to server";
-        }
-      }
-
-      async function getSubscriptions() {
-        const params = new URLSearchParams();
-        if (email) params.append("email", email);
-      
-        try {
-          let url;
-          if (API_BASE_URL === "") {
-            url = `/subscriptions?${params.toString()}`;
-          } else {
-            //const lambdaParams = new URLSearchParams();
-            //if (email) lambdaParams.append("email", email);
-            //url = `${API_BASE_URL}/music?${lambdaParams.toString()}`;
-          }
-
-          const response = await fetch(url, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json"
+            if (!response.ok) {
+              document.getElementById("error-message").innerText = data.message;
+              return;
             }
-          });
-          
-          const data = await response.json();
-          const container = document.getElementById("subscriptions-container");
-          container.innerHTML = "";
 
-          if (!response.ok || !data.Subscriptions || data.Subscriptions.length === 0) {
-            container.innerHTML = "<p>No subscriptions added</p>";
-            return;
+            getSubscriptions();
+
+          } catch (error) {
+            document.getElementById("error-message").innerText = "Error connecting to server";
           }
-
-          // display each subscription
-          data.Subscriptions.forEach(sub => {
-            const subDiv = document.createElement("div");
-            subDiv.className = "subscription-item";
-
-            subDiv.innerHTML = `
-                <p><strong>Title:</strong>  ${sub.title}</p>
-                <p><strong>Artist:</strong> ${sub.artist}</p>
-                <p><strong>Year:</strong>   ${sub.year}</p>
-                <p><strong>Album:</strong>  ${sub.album}</p>
-                <img src="${sub.image_url}" alt="${sub.artist}" width="80">
-                <button onclick="removeSubscription('${sub.title}', '${sub.album}')">Remove</button>
-                <hr>
-            `;
-            container.appendChild(subDiv);
-
-          });
-        } catch (error) {
-          document.getElementById("error-message").innerText = "Error connecting to server";
         }
-      }
 
-      function logout() {
-        localStorage.clear();
-        window.location.href = "/login";
-      }
-  </script>
+        async function removeSubscription(song) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/subscribe`, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                email: email,
+                title: song.title,
+                album: song.album
+              })
+            });
 
+            const data = await response.json();
+
+            if (!response.ok) {
+              document.getElementById("error-message").innerText = data.message;
+              return;
+            }
+
+            getSubscriptions();
+
+          } catch (error) {
+            document.getElementById("error-message").innerText = "Error connecting to server";
+          }
+        }
+
+        async function getSubscriptions() {
+          const params = new URLSearchParams();
+          params.append("email", email);
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/subscriptions?${params.toString()}`);
+            const data = await response.json();
+
+            const container = document.getElementById("subscriptions-container");
+            container.innerHTML = "";
+
+            if (!response.ok || !data.Subscriptions || data.Subscriptions.length === 0) {
+              container.innerHTML = "<p>No subscriptions added</p>";
+              return;
+            }
+
+            data.Subscriptions.forEach(sub => {
+              const subDiv = document.createElement("div");
+              subDiv.className = "subscription-item";
+
+              subDiv.innerHTML = `
+              <p><strong>Title:</strong> ${sub.title}</p>
+              <p><strong>Artist:</strong> ${sub.artist}</p>
+              <p><strong>Year:</strong> ${sub.year}</p>
+              <p><strong>Album:</strong> ${sub.album}</p>
+              <img src="${sub.image_url}" alt="${sub.artist}" width="80">
+              <button onclick='removeSubscription(${JSON.stringify(sub)})'>Remove</button>
+              <hr>
+            `;
+
+              container.appendChild(subDiv);
+            });
+
+          } catch (error) {
+            document.getElementById("error-message").innerText = "Error connecting to server";
+          }
+        }
+
+        function logout() {
+          localStorage.clear();
+          window.location.href = "/login";
+        }
+      </script>
 </body>
+
 </html>

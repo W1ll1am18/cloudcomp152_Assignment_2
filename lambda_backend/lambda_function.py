@@ -140,13 +140,69 @@ def query_music(event):
     return make_response(200, songs)
 
 
-def get_subscriptions(event):
-    return make_response(200, {"message": "subscriptions endpoint working"})
-
-
 def subscribe(event):
-    return make_response(200, {"message": "subscribe endpoint working"})
+    body = json.loads(event.get("body", "{}"))
+
+    email = body.get("email")
+    title = body.get("title")
+    artist = body.get("artist")
+    album = body.get("album")
+    year = body.get("year")
+    image_url = body.get("image_url")
+
+    if not email or not title or not album:
+        return make_response(400, {"message": "Email, title, and album are required"})
+
+    song_id = f"{title}#{album}"
+
+    subscriptions_table.put_item(
+        Item={
+            "email": email,
+            "song_id": song_id,
+            "title": title,
+            "artist": artist,
+            "album": album,
+            "year": year,
+            "image_url": image_url
+        }
+    )
+
+    return make_response(201, {"message": "Song subscribed successfully"})
+
+
+def get_subscriptions(event):
+    params = event.get("queryStringParameters") or {}
+    email = params.get("email")
+
+    if not email:
+        return make_response(400, {"message": "Email is required"})
+
+    result = subscriptions_table.query(
+        KeyConditionExpression=Key("email").eq(email)
+    )
+
+    return make_response(200, {
+        "Subscriptions": result.get("Items", [])
+    })
 
 
 def remove_subscription(event):
-    return make_response(200, {"message": "remove subscription endpoint working"})
+    body = json.loads(event.get("body", "{}"))
+
+    email = body.get("email")
+    title = body.get("title")
+    album = body.get("album")
+
+    if not email or not title or not album:
+        return make_response(400, {"message": "Email, title, and album are required"})
+
+    song_id = f"{title}#{album}"
+
+    subscriptions_table.delete_item(
+        Key={
+            "email": email,
+            "song_id": song_id
+        }
+    )
+
+    return make_response(200, {"message": "Subscription removed successfully"})
