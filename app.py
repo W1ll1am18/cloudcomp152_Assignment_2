@@ -72,6 +72,10 @@ def registerEvent():
 def main():
     return render_template("main.html")
 
+@app.route("/logout", methods=['POST'])
+def logout():
+    return jsonify({'message': 'Logged out successfully'}), 200
+
 @app.route("/query", methods=['GET'])
 def query():
     def filterHelper(filters):
